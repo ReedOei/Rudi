@@ -2,7 +2,8 @@ module Rudi.Parser
     (
         rudiStatement,
         parseFile,
-        parseExpr
+        parseExpr,
+        parseStatement
     ) where
 
 import Text.ParserCombinators.Parsec
@@ -47,14 +48,9 @@ definitionParser = do
 
     return $ Define n rep
 
-parseFile :: String -> RudiFile
-parseFile str = case parse rudiFileParser "Error: " str of
-                    Left err -> error $ show err
-                    Right rudiFile -> rudiFile
-
--- Parses: S, K, "VarName"
+-- Parses: "VarName"
 identifierParser :: CharParser st Expr
-identifierParser = Var <$> many1 letter
+identifierParser = Var <$> many1 (noneOf " \n\r()-→>")
 
 -- Parses: "(Expr)"
 parenParser :: CharParser st Expr
@@ -71,3 +67,15 @@ parseExpr :: String -> Expr
 parseExpr str = case parse applyList "Error: " str of
                     Left err -> error $ show err
                     Right expr -> expr
+
+parseFile :: String -> RudiFile
+parseFile str = case parse rudiFileParser "Error: " str of
+                    Left err -> error $ show err
+                    Right rudiFile -> rudiFile
+
+parseStatement :: String -> Statement
+parseStatement str = case parse rudiStatement "Error :" str of
+                        Left err -> error $ show err
+                        Right statement -> statement
+
+

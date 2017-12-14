@@ -1,7 +1,8 @@
 module Rudi.Repl
     (
         repl,
-        replFile
+        replFile,
+        loadFile
     ) where
 
 import Data.Map (Map)
@@ -29,10 +30,12 @@ evaluateFile (RudiFile (Import path:statements)) = do
 
     return $ Map.union m loadedMap
 
-evaluateFile (RudiFile (Define x y:statements)) = do
+evaluateFile (RudiFile (def@(Define x y):statements)) = do
     m <- evaluateFile $ RudiFile statements
 
-    return $ Map.insert x y m
+    case compile def of
+        Define x y -> return $ Map.insert x y m
+        _ -> return m
 
 loadFile :: String -> IO (Map Expr Expr)
 loadFile path = do
