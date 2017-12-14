@@ -31,7 +31,7 @@ importParser :: CharParser st Statement
 importParser = do
     string "import"
     spaces
-    moduleName <- many1 letter
+    moduleName <- many1 (letter <|> char '.')
 
     return $ Import moduleName
 

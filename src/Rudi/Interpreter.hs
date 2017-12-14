@@ -9,6 +9,9 @@ import qualified Data.Map as Map
 
 import Rudi.Types
 
+-- Matches an expression with another expression.
+-- Returns Nothing if they cannot be matched, otherwise, returns a Map containing
+-- the substitutions to make (e.g., I -> S K K, or x -> (K x))
 match :: Expr -> Expr -> Maybe (Map String Expr)
 match (Var x) expr
     | isUpper $ head x =
@@ -55,8 +58,6 @@ eval defs (Var x) =
         Var y | x == y -> Var y
         newExpr ->
             eval defs newExpr
--- eval defs (Apply (Apply (Var "K") x) y) = eval defs $ doSubstitute defs x
--- eval defs (Apply (Apply (Apply (Var "S") x) y) z) = eval defs $ Apply (Apply x z) (Apply y z)
 eval defs expr@(Apply x0 y0) =
     case doSubstitute defs expr of
         Var x -> Var x
@@ -67,3 +68,4 @@ eval defs expr@(Apply x0 y0) =
                     Apply evalX evalY
                 else
                     eval defs $ Apply evalX evalY
+
