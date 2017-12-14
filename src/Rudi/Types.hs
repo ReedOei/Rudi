@@ -17,13 +17,13 @@ data Expr = Apply Expr Expr |
             ToSubstitute String |
             S |
             K
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord)
 
--- instance Show Expr where
---     show (Var x) = x
---     show S = "S"
---     show K = "K"
---     show (Apply x y) = "(" ++ show x ++ " " ++ show y ++ ")"
+instance Show Expr where
+    show (Var x) = x
+    show S = "S"
+    show K = "K"
+    show (Apply x y) = "(" ++ show x ++ " " ++ show y ++ ")"
 
 instance Show Statement where
     show (Import str) = "import " ++ str

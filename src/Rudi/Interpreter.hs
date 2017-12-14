@@ -17,11 +17,32 @@ contains (Var x) str = str == x
 contains (Apply x y) str = x `contains` str || y `contains` str
 contains _ _ = False
 
+getFunctionName :: Expr -> String
+getFunctionName (Var x) = x
+getFunctionName (Apply x _) = getFunctionName x
+
+prependParam :: String -> Expr -> Expr
+prependParam str (Var x) = Apply (Var x) (Var str)
+prependParam str (Apply x y) = Apply (prependParam str x) y
+
 -- Takes a definition and redefines it using only S and K
 compile :: Map Expr Expr -> Statement -> Statement
-compile _ (Define (Var x) y) = Define (Var x) y
-compile defs (Define (Apply (Var x) (Var var)) y) = Define (Var x) $ compileExpr (doSubstitute defs y) var
-compile defs (Define (Apply x (Var var)) y) = compile defs $ Define x $ compileExpr (doSubstitute defs y) var
+compile defs (Define def y) =
+    let fname = getFunctionName def in
+        if y `contains` fname then
+            let newBody = doSubstitute (Map.fromList [(Var fname, Var "Func")]) y
+                newDef = prependParam "Func" def in
+
+                case compile defs (Define newDef newBody) of
+                    Define x y -> unsafePerformIO $ do
+                        putStrLn $ "Redefining " ++ fname ++ " with:"
+                        print $ Define (Var fname) $ doSubstitute defs $ Apply (Var "Y") y
+                        return $ Define (Var fname) $ doSubstitute defs $ Apply (Var "Y") y
+        else
+            case def of
+                Var x -> Define (Var x) y
+                Apply (Var x) (Var var) -> Define (Var x) $ compileExpr (doSubstitute defs y) var
+                Apply x (Var var) -> compile defs $ Define x $ compileExpr (doSubstitute defs y) var
 
 -- Bracket abstraction.
 -- [x]_x = S K K
@@ -95,14 +116,14 @@ eval defs (Var x) =
             eval defs newExpr
 eval defs (Apply (Apply K x) y) = eval defs x
 eval defs (Apply (Apply (Apply S x) y) z) = eval defs (Apply (Apply x z) (Apply y z))
-eval defs expr@(Apply x0 y0) =
-    case doSubstitute defs expr of
-        Var x -> Var x
-        Apply x y ->
-            let evalX = eval defs $ doSubstitute defs x
-                evalY = eval defs $ doSubstitute defs y in
-                if evalX == x0 && evalY == y0 then
-                    Apply evalX evalY
-                else
-                    eval defs $ Apply evalX evalY
+eval defs expr@(Apply x y) =
+    let evalX = eval defs $ doSubstitute defs x
+        evalY = eval defs $ doSubstitute defs y in
+        if evalX == x then
+            if evalY == y then
+                Apply evalX evalY
+            else
+                eval defs $ Apply evalX evalY
+        else
+            eval defs $ Apply evalX y
 
