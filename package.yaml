@@ -28,7 +28,7 @@ library:
   source-dirs: src
 
 executables:
-  Rudi-exe:
+  Rudi:
     main:                Main.hs
     source-dirs:         app
     ghc-options:

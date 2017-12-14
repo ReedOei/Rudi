@@ -4,8 +4,6 @@ module Rudi.Repl
         replFile
     ) where
 
-import Control.Monad (join)
-
 import Data.Map (Map)
 import qualified Data.Map as Map
 
@@ -35,7 +33,6 @@ loadFile path = evaluateFile =<< (parseFile <$> readFile path)
 
 runRepl :: Map Expr Expr -> IO ()
 runRepl defs = do
-    print defs
     putStr "> "
     line <- getLine
 
