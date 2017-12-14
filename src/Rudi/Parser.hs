@@ -48,9 +48,15 @@ definitionParser = do
 
     return $ Define n rep
 
--- Parses: "VarName"
+-- Parses: S, K, "VarName"
 identifierParser :: CharParser st Expr
-identifierParser = Var <$> many1 (noneOf " \n\r()-→>")
+identifierParser = do
+    name <- many1 (noneOf " \n\r()-→>")
+
+    return $ case name of
+                "K" -> K
+                "S" -> S
+                _ -> Var name
 
 -- Parses: "(Expr)"
 parenParser :: CharParser st Expr
