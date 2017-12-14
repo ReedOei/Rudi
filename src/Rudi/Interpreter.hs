@@ -18,9 +18,10 @@ contains (Apply x y) str = x `contains` str || y `contains` str
 contains _ _ = False
 
 -- Takes a definition and redefines it using only S and K
-compile :: Statement -> Statement
-compile (Define (Apply (Var x) (Var var)) y) = Define (Var x) $ compileExpr y var
-compile (Define (Apply x (Var var)) y) = compile $ Define x $ compileExpr y var
+compile :: Map Expr Expr -> Statement -> Statement
+compile _ (Define (Var x) y) = Define (Var x) y
+compile defs (Define (Apply (Var x) (Var var)) y) = Define (Var x) $ compileExpr (doSubstitute defs y) var
+compile defs (Define (Apply x (Var var)) y) = compile defs $ Define x $ compileExpr (doSubstitute defs y) var
 
 -- Bracket abstraction.
 -- [x]_x = S K K

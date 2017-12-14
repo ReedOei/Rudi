@@ -20,27 +20,23 @@ import Rudi.Types
 createPath :: String -> String
 createPath str = replace "super" ".." (replace "." "/" str) ++ ".rudi"
 
-evaluateFile :: RudiFile -> IO (Map Expr Expr)
-evaluateFile (RudiFile []) = return Map.empty
-evaluateFile (RudiFile (EmptyStatement:statements)) = evaluateFile (RudiFile statements)
-evaluateFile (RudiFile (Import path:statements)) = do
-    m <- evaluateFile $ RudiFile statements
+evaluateFile :: Map Expr Expr -> RudiFile -> IO (Map Expr Expr)
+evaluateFile m (RudiFile []) = return m
+evaluateFile m (RudiFile (EmptyStatement:statements)) = evaluateFile m (RudiFile statements)
+evaluateFile m (RudiFile (Import path:statements)) = do
+    loadedMap <- loadFile m $ createPath path
 
-    loadedMap <- loadFile $ createPath path
+    evaluateFile (Map.union loadedMap m) $ RudiFile statements
 
-    return $ Map.union m loadedMap
-
-evaluateFile (RudiFile (def@(Define x y):statements)) = do
-    m <- evaluateFile $ RudiFile statements
-
-    case compile def of
-        Define x y -> return $ Map.insert x y m
+evaluateFile m (RudiFile (def@(Define x y):statements)) =
+    case compile m def of
+        Define x y -> evaluateFile (Map.insert x y m) $ RudiFile statements
         _ -> return m
 
-loadFile :: String -> IO (Map Expr Expr)
-loadFile path = do
+loadFile :: Map Expr Expr -> String -> IO (Map Expr Expr)
+loadFile m path = do
     contents <- readFile path
-    evaluateFile $ parseFile contents
+    evaluateFile m $ parseFile contents
 
 runRepl :: Map Expr Expr -> IO ()
 runRepl defs = do
@@ -52,13 +48,14 @@ runRepl defs = do
     else
         case parse rudiStatement "" line of
             Right statement -> do
-                newDefs <- evaluateFile $ RudiFile [statement]
+                newDefs <- evaluateFile Map.empty $ RudiFile [statement]
                 runRepl $ Map.union defs newDefs
             Left _ -> do
                 print $ eval defs $ parseExpr line
                 runRepl defs
 
 replFile :: String -> IO ()
-replFile str = runRepl =<< loadFile str
+replFile str = runRepl =<< loadFile Map.empty str
 
 repl = runRepl Map.empty
+
