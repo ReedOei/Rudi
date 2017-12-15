@@ -1,7 +1,8 @@
 module Rudi.Interpreter
     (
         eval, evalOnce,
-        compile, compileExpr
+        compile, compileExpr,
+        getDefinition
     ) where
 
 import Data.Char (isUpper)
@@ -11,6 +12,11 @@ import qualified Data.Map as Map
 import System.IO.Unsafe
 
 import Rudi.Types
+
+getDefinition :: String -> Map Expr Expr -> Maybe Expr
+getDefinition name defs = case Map.lookup (Var name) defs of
+                            Nothing -> Nothing
+                            Just expr -> Just $ snd $ evalOnce $ doSubstitute defs expr
 
 contains :: Expr -> String -> Bool
 contains (Var x) str = str == x
