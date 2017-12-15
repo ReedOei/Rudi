@@ -24,6 +24,7 @@ dependencies:
 - parsec >= 3.1.11
 - containers
 - MissingH
+- haskeline
 
 library:
   source-dirs: src

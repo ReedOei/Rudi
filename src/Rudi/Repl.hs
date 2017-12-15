@@ -5,9 +5,13 @@ module Rudi.Repl
         loadFile
     ) where
 
+import Control.Monad.IO.Class
+
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.String.Utils (replace)
+
+import System.Console.Haskeline
 
 import Text.ParserCombinators.Parsec
 
@@ -38,24 +42,28 @@ loadFile m path = do
     contents <- readFile path
     evaluateFile m $ parseFile contents
 
-runRepl :: Map Expr Expr -> IO ()
+runRepl :: Map Expr Expr -> InputT IO ()
 runRepl defs = do
-    putStr "> "
-    line <- getLine
+    input <- getInputLine "> "
 
-    if unwords (words line) == "" then
-        runRepl defs
-    else
-        case parse rudiStatement "" line of
-            Right statement -> do
-                newDefs <- evaluateFile Map.empty $ RudiFile [statement]
-                runRepl $ Map.union defs newDefs
-            Left _ -> do
-                print $ eval defs $ parseExpr line
+    case input of
+        Nothing -> runRepl defs
+        Just line ->
+            if unwords (words line) == "" then
                 runRepl defs
+            else
+                case parse rudiStatement "" line of
+                    Right statement -> do
+                        newDefs <- liftIO $ evaluateFile Map.empty $ RudiFile [statement]
+                        runRepl $ Map.union defs newDefs
+                    Left _ -> do
+                        outputStrLn $ show $ eval defs $ parseExpr line
+                        runRepl defs
 
 replFile :: String -> IO ()
-replFile str = runRepl =<< loadFile Map.empty str
+replFile str = do
+    defs <- loadFile Map.empty str
+    runInputT defaultSettings $ runRepl defs
 
-repl = runRepl Map.empty
+repl = runInputT defaultSettings $ runRepl Map.empty
 
