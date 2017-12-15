@@ -15,21 +15,19 @@ data Statement = Import String |
 data Expr = Apply Expr Expr |
             Var String |
             ToSubstitute String |
-            S |
-            K
+            S | K | I | B | C
     deriving (Eq, Ord)
+
 
 instance Show Expr where
     show (Var x) = x
     show S = "S"
     show K = "K"
-    show (Apply (Apply a b) y) = "(" ++ show a ++ " " ++ show b ++ " " ++ show y ++ ")"
-    show (Apply x y) = "(" ++ show x ++ " " ++ show y ++ ")"
-
--- prettyPrint (Var x) = x
--- prettyPrint S = "S"
--- prettyPrint K = "K"
--- prettyPrint (Apply x y) = "(" ++ prettyPrint x ++ " " ++ prettyPrint y ++ ")"
+    show I = "I"
+    show B = "B"
+    show C = "C"
+    show (Apply x y@(Apply a b)) = show x ++ " (" ++ show y ++ ")"
+    show (Apply x y) = show x ++ " " ++ show y
 
 instance Show Statement where
     show (Import str) = "import " ++ str

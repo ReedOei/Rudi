@@ -2,7 +2,7 @@
 -- Basic combinators
 -------------------------
 -- Identity
-I x -> x
+-- I x -> x -- Added to core language.
 
 N x y -> y
 
@@ -14,11 +14,11 @@ T x y -> y x
 U x y -> y (x x y)
 
 W x y -> x y y
-B x y z -> x (y z)
+-- B x y z -> x (y z)
 
 P a b -> a (a (a b))
 
-C x y z -> x z y
+-- C x y z -> x z y
 
 -------------------------
 -- Booleans

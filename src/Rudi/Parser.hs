@@ -64,6 +64,9 @@ identifierParser = do
                 Nothing -> case name of
                                 "K" -> K
                                 "S" -> S
+                                "I" -> I
+                                "B" -> B
+                                "C" -> C
                                 _ -> Var name
 
 -- Parses: "(Expr)"

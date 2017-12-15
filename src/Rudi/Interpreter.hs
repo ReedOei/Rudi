@@ -29,6 +29,7 @@ prependParam str (Apply x y) = Apply (prependParam str x) y
 compile :: Map Expr Expr -> Statement -> Statement
 compile defs (Define def y) =
     let fname = getFunctionName def in
+        -- Recursive definitions
         if y `contains` fname then
             let newBody = doSubstitute (Map.fromList [(Var fname, Var "Func")]) y
                 newDef = prependParam "Func" def in
@@ -41,7 +42,7 @@ compile defs (Define def y) =
                 Apply (Var x) (Var var) -> Define (Var x) $ compileExpr (doSubstitute defs y) var
                 Apply x (Var var) -> compile defs $ Define x $ compileExpr (doSubstitute defs y) var
 
--- Bracket abstraction.
+-- Bracket abstraction, using only S and K.
 -- [x]_x = S K K
 -- [x]_y = K x
 -- [x y]_b = S ([x]_b) ([y]_b)
@@ -49,8 +50,27 @@ compileExpr :: Expr -> String -> Expr
 compileExpr expr str
     | expr `contains` str =
         case expr of
+            Var x | x == str -> I
+            Apply g (Var x) | x == str && not (g `contains` str) -> g
+            Apply x y
+                | x `contains` str && y `contains` str ->
+                        Apply (Apply S (compileExpr x str)) (compileExpr y str)
+                | x `contains` str && not (y `contains` str) ->
+                        Apply (Apply C (compileExpr x str)) y
+                | not (x `contains` str) && y `contains` str ->
+                        Apply (Apply B x) (compileExpr y str)
+    | otherwise = Apply K expr
+
+-- Bracket abstraction, using only S and K.
+-- [x]_x = S K K
+-- [x]_y = K x
+-- [x y]_b = S ([x]_b) ([y]_b)
+compileExprSK :: Expr -> String -> Expr
+compileExprSK expr str
+    | expr `contains` str =
+        case expr of
             Var x | x == str -> Apply (Apply S K) K
-            Apply x y -> Apply (Apply S (compileExpr x str)) (compileExpr y str)
+            Apply x y -> Apply (Apply S (compileExprSK x str)) (compileExprSK y str)
     | otherwise = Apply K expr
 
 -- Matches an expression with another expression.
@@ -68,29 +88,25 @@ match (Apply _ _) (Var _) = Nothing
 match _ _ = Nothing
 
 substituteName :: String -> Expr -> Expr -> Expr
-substituteName _ _ S = S
-substituteName _ _ K = K
 substituteName _ _ (Var x) = Var x
 substituteName name rep (ToSubstitute x)
     | x == name = rep
     | otherwise = ToSubstitute x
 substituteName name rep (Apply x y) = Apply (substituteName name rep x) (substituteName name rep y)
+substituteName _ _ expr = expr
 
 -- Preparing to substitute creates placeholders for each variable we are going to substitute.
 -- This is important if we are going to substitute value that have the same name as parameters in our rule.
 -- Example: S K y x would substitute the value 'x' into the x position: (x x) (y x), then substitute K in for x, which would be wrong.
 prepareSubstitute :: String -> Expr -> Expr
-prepareSubstitute _ S = S
-prepareSubstitute _ K = K
 prepareSubstitute _ (ToSubstitute x) = ToSubstitute x
 prepareSubstitute name (Var x)
     | x == name = ToSubstitute x
     | otherwise = Var x
 prepareSubstitute name (Apply x y) = Apply (prepareSubstitute name x) (prepareSubstitute name y)
+prepareSubstitute _ expr = expr
 
 substitute :: Expr -> Expr -> Expr -> Expr
-substitute _ _ S = S
-substitute _ _ K = K
 substitute search rep expr@(Var x) =
     case match search expr of
         Nothing -> expr
@@ -99,6 +115,7 @@ substitute search rep expr@(Apply x y) =
     case match search expr of
         Nothing -> Apply (substitute search rep x) (substitute search rep y)
         Just reps -> Map.foldWithKey substituteName (Map.foldWithKey (\key _ cur -> prepareSubstitute key cur) rep reps) reps
+substitute _ _ expr = expr
 
 doSubstitute :: Map Expr Expr -> Expr -> Expr
 doSubstitute defs expr = Map.foldWithKey substitute expr defs
@@ -106,8 +123,11 @@ doSubstitute defs expr = Map.foldWithKey substitute expr defs
 -- Evaluates once, returning whether the expression was changed.
 -- This is here because if we compare equality we force computation, which ruins the laziness.
 evalOnce :: Expr -> (Bool, Expr)
+evalOnce (Apply I x) = (True, x)
 evalOnce (Apply (Apply K x) y) = (True, x)
 evalOnce (Apply (Apply (Apply S x) y) z) = (True, Apply (Apply x z) (Apply y z))
+evalOnce (Apply (Apply (Apply B x) y) z) = (True, Apply x (Apply y z))
+evalOnce (Apply (Apply (Apply C x) y) z) = (True, Apply (Apply x z) y)
 evalOnce (Apply x y) = let (xChange, evalX) = evalOnce x
                            (yChange, evalY) = evalOnce y in
                            (xChange || yChange, Apply evalX evalY)
@@ -118,12 +138,16 @@ eval defs expr =
     case expr of
         S -> S
         K -> K
+        I -> I
         Var x ->
             case doSubstitute defs $ Var x of
                 Var y | x == y -> Var y
-                newExpr -> eval defs $ newExpr
-        Apply (Apply K x) y -> eval defs $ x
+                newExpr -> eval defs newExpr
+        Apply I x -> eval defs x
+        Apply (Apply K x) y -> eval defs x
         Apply (Apply (Apply S x) y) z -> eval defs $ Apply (Apply x z) (Apply y z)
+        Apply (Apply (Apply B x) y) z -> eval defs $ Apply x (Apply y z)
+        Apply (Apply (Apply C x) y) z -> eval defs $ Apply (Apply x z) y
         Apply x y ->
             let (xChange, evalX) = evalOnce $ doSubstitute defs x
                 (yChange, evalY) = evalOnce $ doSubstitute defs y in
