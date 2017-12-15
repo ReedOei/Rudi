@@ -107,23 +107,21 @@ doSubstitute :: Map Expr Expr -> Expr -> Expr
 doSubstitute defs expr = Map.foldWithKey substitute expr defs
 
 eval :: Map Expr Expr -> Expr -> Expr
-eval _ S = S
-eval _ K = K
-eval defs (Var x) =
-    case doSubstitute defs $ Var x of
-        Var y | x == y -> Var y
-        newExpr ->
-            eval defs newExpr
-eval defs (Apply (Apply K x) y) = eval defs x
-eval defs (Apply (Apply (Apply S x) y) z) = eval defs (Apply (Apply x z) (Apply y z))
-eval defs expr@(Apply x y) =
-    let evalX = eval defs $ doSubstitute defs x
-        evalY = eval defs $ doSubstitute defs y in
-        if evalX == x then
-            if evalY == y then
-                Apply evalX evalY
-            else
-                eval defs $ Apply evalX evalY
-        else
-            eval defs $ Apply evalX y
+eval defs expr =
+    case expr of
+        S -> S
+        K -> K
+        Var x ->
+            case doSubstitute defs $ Var x of
+                Var y | x == y -> Var y
+                newExpr -> newExpr
+        Apply (Apply K x) y -> x
+        Apply (Apply (Apply S x) y) z -> Apply (Apply x z) (Apply y z)
+        Apply x y ->
+            let evalX = eval defs $ doSubstitute defs x
+                evalY = eval defs $ doSubstitute defs y in
+                if evalX == x && evalY == y then
+                    Apply evalX evalY
+                else
+                    Apply evalX evalY
 

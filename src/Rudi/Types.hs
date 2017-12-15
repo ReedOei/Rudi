@@ -2,7 +2,7 @@ module Rudi.Types
     (
         Expr(..),
         RudiFile(..),
-        Statement(..)
+        Statement(..),
     ) where
 
 newtype RudiFile = RudiFile [Statement]
@@ -23,7 +23,13 @@ instance Show Expr where
     show (Var x) = x
     show S = "S"
     show K = "K"
+    show (Apply (Apply a b) y) = "(" ++ show a ++ " " ++ show b ++ " " ++ show y ++ ")"
     show (Apply x y) = "(" ++ show x ++ " " ++ show y ++ ")"
+
+-- prettyPrint (Var x) = x
+-- prettyPrint S = "S"
+-- prettyPrint K = "K"
+-- prettyPrint (Apply x y) = "(" ++ prettyPrint x ++ " " ++ prettyPrint y ++ ")"
 
 instance Show Statement where
     show (Import str) = "import " ++ str
