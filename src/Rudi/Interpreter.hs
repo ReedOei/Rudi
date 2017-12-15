@@ -34,10 +34,7 @@ compile defs (Define def y) =
                 newDef = prependParam "Func" def in
 
                 case compile defs (Define newDef newBody) of
-                    Define x y -> unsafePerformIO $ do
-                        putStrLn $ "Redefining " ++ fname ++ " with:"
-                        print $ Define (Var fname) $ doSubstitute defs $ Apply (Var "Y") y
-                        return $ Define (Var fname) $ doSubstitute defs $ Apply (Var "Y") y
+                    Define x y -> Define (Var fname) $ doSubstitute defs $ Apply (Var "Y") y
         else
             case def of
                 Var x -> Define (Var x) y
