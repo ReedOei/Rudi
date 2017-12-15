@@ -7,8 +7,14 @@ module Rudi.Parser
     ) where
 
 import Text.ParserCombinators.Parsec
+import Text.Read (readMaybe)
 
 import Rudi.Types
+
+-- Utility
+applyN :: (a -> a) -> Integer -> a -> a
+applyN _ 0 = id
+applyN f n = f . applyN f (n - 1)
 
 -- Rudi File Parser
 rudiFileParser :: CharParser st RudiFile
@@ -53,10 +59,12 @@ identifierParser :: CharParser st Expr
 identifierParser = do
     name <- many1 (noneOf " \n\r()-→>")
 
-    return $ case name of
-                "K" -> K
-                "S" -> S
-                _ -> Var name
+    return $ case readMaybe name of
+                Just n -> applyN (Apply (Var "Next")) n (Var "Zero")
+                Nothing -> case name of
+                                "K" -> K
+                                "S" -> S
+                                _ -> Var name
 
 -- Parses: "(Expr)"
 parenParser :: CharParser st Expr

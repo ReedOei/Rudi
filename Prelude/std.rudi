@@ -76,8 +76,18 @@ Equal m n -> And (LessEq m n) (MoreEq m n)
 Y -> U U
 
 Fun n -> If (IsZero n) Zero (Fun (Prev n))
-
 Loop -> Loop
 
 Fact n -> If (IsZero n) (Next Zero) (Times n (Fact (Prev n)))
+
+Div m n -> If (Less m n) Zero (Next (Div (Minus m n) n))
+
+Mod m n -> Minus m (Times n (Div m n))
+
+-- Whether m divides n
+Divides m n -> IsZero (Mod n m)
+
+Even n -> Divides (Next (Next Zero)) n
+
+GCD m n -> If (IsZero n) m (GCD n (Mod m n))
 

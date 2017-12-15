@@ -34,7 +34,7 @@ compile defs (Define def y) =
                 newDef = prependParam "Func" def in
 
                 case compile defs (Define newDef newBody) of
-                    Define x y -> Define (Var fname) $ doSubstitute defs $ Apply (Var "Y") y
+                    Define x y -> Define (Var fname) $ doSubstitute defs $ Apply (Var "Y") y -- TODO: Maybe maybe this nice so I don't have to hardcode in the Y var.
         else
             case def of
                 Var x -> Define (Var x) y
