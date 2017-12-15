@@ -79,5 +79,5 @@ Fun n -> If (IsZero n) Zero (Fun (Prev n))
 
 Loop -> Loop
 
-Test f n -> (IsZero n) Zero (f (Prev n))
+Fact n -> If (IsZero n) (Next Zero) (Times n (Fact (Prev n)))
 

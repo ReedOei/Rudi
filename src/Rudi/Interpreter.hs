@@ -1,6 +1,6 @@
 module Rudi.Interpreter
     (
-        eval,
+        eval, evalOnce,
         compile, compileExpr
     ) where
 
@@ -106,6 +106,16 @@ substitute search rep expr@(Apply x y) =
 doSubstitute :: Map Expr Expr -> Expr -> Expr
 doSubstitute defs expr = Map.foldWithKey substitute expr defs
 
+-- Evaluates once, returning whether the expression was changed.
+-- This is here because if we compare equality we force computation, which ruins the laziness.
+evalOnce :: Expr -> (Bool, Expr)
+evalOnce (Apply (Apply K x) y) = (True, x)
+evalOnce (Apply (Apply (Apply S x) y) z) = (True, Apply (Apply x z) (Apply y z))
+evalOnce (Apply x y) = let (xChange, evalX) = evalOnce x
+                           (yChange, evalY) = evalOnce y in
+                           (xChange || yChange, Apply evalX evalY)
+evalOnce expr = (False, expr)
+
 eval :: Map Expr Expr -> Expr -> Expr
 eval defs expr =
     case expr of
@@ -114,14 +124,14 @@ eval defs expr =
         Var x ->
             case doSubstitute defs $ Var x of
                 Var y | x == y -> Var y
-                newExpr -> newExpr
-        Apply (Apply K x) y -> x
-        Apply (Apply (Apply S x) y) z -> Apply (Apply x z) (Apply y z)
+                newExpr -> eval defs $ newExpr
+        Apply (Apply K x) y -> eval defs $ x
+        Apply (Apply (Apply S x) y) z -> eval defs $ Apply (Apply x z) (Apply y z)
         Apply x y ->
-            let evalX = eval defs $ doSubstitute defs x
-                evalY = eval defs $ doSubstitute defs y in
-                if evalX == x && evalY == y then
-                    Apply evalX evalY
+            let (xChange, evalX) = evalOnce $ doSubstitute defs x
+                (yChange, evalY) = evalOnce $ doSubstitute defs y in
+                if xChange || yChange then
+                    eval defs $ Apply evalX evalY
                 else
                     Apply evalX evalY
 
