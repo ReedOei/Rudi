@@ -109,3 +109,7 @@ Many x -> Cons x (Many x)
 From n -> Cons n (From (Next n))
 Naturals -> From Zero
 
+Take n l -> If (IsZero n) Empty (If (IsEmpty l) Empty (Cons (Head l) (Take (Prev n) (Tail l))))
+
+Sum l -> If (IsEmpty l) Zero (Plus (Head l) (Sum (Tail l)))
+

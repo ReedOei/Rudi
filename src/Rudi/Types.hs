@@ -22,6 +22,10 @@ data Expr = Apply Expr Expr |
             S | K | I | B | C
     deriving (Eq, Ord)
 
+-- Numbers have to be written Succ (Succ (Succ Z))) for this to work.
+getNumber (Var "Z") = Just 0
+getNumber (Apply (Var "Succ") y) = (+ 1) <$> getNumber y
+getNumber _ = Nothing
 
 instance Show Expr where
     show (Var x) = x
@@ -30,8 +34,13 @@ instance Show Expr where
     show I = "I"
     show B = "B"
     show C = "C"
-    show (Apply x y@(Apply a b)) = show x ++ " (" ++ show y ++ ")"
-    show (Apply x y) = show x ++ " " ++ show y
+    show expr =
+        case getNumber expr of
+            Just n -> show n
+            Nothing ->
+                case expr of
+                    Apply x y@(Apply a b) -> show x ++ " (" ++ show y ++ ")"
+                    Apply x y ->  show x ++ " " ++ show y
 
 instance Show Statement where
     show (Import str) = "import " ++ str
