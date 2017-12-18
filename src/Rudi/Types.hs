@@ -3,14 +3,18 @@ module Rudi.Types
         Expr(..),
         RudiFile(..),
         Statement(..),
+        Command(..)
     ) where
 
 newtype RudiFile = RudiFile [Statement]
     deriving Show
 
+data Command = ShowDef
+
 data Statement = Import String |
                  Define Expr Expr |
-                 EmptyStatement
+                 EmptyStatement |
+                 InternalCommand Command String
 
 data Expr = Apply Expr Expr |
             Var String |

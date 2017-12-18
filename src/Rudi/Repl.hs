@@ -26,6 +26,19 @@ createPath str = replace "super" ".." (replace "." "/" str) ++ ".rudi"
 
 evaluateFile :: Map Expr Expr -> RudiFile -> IO (Map Expr Expr)
 evaluateFile m (RudiFile []) = return m
+evaluateFile m (RudiFile (InternalCommand command commandVal:statements)) = do
+    case command of
+        ShowDef ->
+            case getDefinition commandVal m of
+                Nothing -> do
+                    putStrLn $ "No definition called '" ++ commandVal ++ "'"
+                    putStrLn "Valid definitions are: "
+
+                    print $ Map.keys m
+                Just def -> print def
+
+    evaluateFile m $ RudiFile statements
+
 evaluateFile m (RudiFile (EmptyStatement:statements)) = evaluateFile m (RudiFile statements)
 evaluateFile m (RudiFile (Import path:statements)) = do
     loadedMap <- loadFile m $ createPath path
@@ -54,7 +67,7 @@ runRepl defs = do
             else
                 case parse rudiStatement "" line of
                     Right statement -> do
-                        newDefs <- liftIO $ evaluateFile Map.empty $ RudiFile [statement]
+                        newDefs <- liftIO $ evaluateFile defs $ RudiFile [statement]
                         runRepl $ Map.union defs newDefs
                     Left _ -> do
                         outputStrLn $ show $ eval defs $ parseExpr line

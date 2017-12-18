@@ -31,7 +31,8 @@ rudiComment = do
     return EmptyStatement
 
 rudiStatement :: CharParser st Statement
-rudiStatement = importParser <|>
+rudiStatement = internalCommandParser <|>
+                importParser <|>
                 definitionParser
 
 importParser :: CharParser st Statement
@@ -53,6 +54,19 @@ definitionParser = do
     rep <- applyList
 
     return $ Define n rep
+
+internalCommandParser :: CharParser st Statement
+internalCommandParser = do
+    char ':'
+
+    commandName <- choice [string "def"]
+    spaces
+    commandVal <- many1 $ noneOf " \n\r\t"
+
+    let command = case commandName of
+                    "def" -> ShowDef
+
+    return $ InternalCommand command commandVal
 
 -- Parses: S, K, "VarName"
 identifierParser :: CharParser st Expr
