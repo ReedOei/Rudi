@@ -28,6 +28,7 @@ getNumber (Apply (Var "Succ") y) = (+ 1) <$> getNumber y
 getNumber _ = Nothing
 
 instance Show Expr where
+    show (Var "Z") = "0"
     show (Var x) = x
     show S = "S"
     show K = "K"

@@ -120,3 +120,6 @@ Length l -> If (IsEmpty l) Zero (Next (Length (Tail l)))
 
 Concat a b -> If (IsEmpty a) b (Cons (Head a) (Concat (Tail a) b))
 
+Map f l -> If (IsEmpty l) Empty (Cons (f (Head l)) (Map f (Tail l)))
+Filter f l -> If (IsEmpty l) Empty (If (f (Head l)) (Cons (Head l) (Filter f (Tail l))) (Filter f (Tail l)))
+
