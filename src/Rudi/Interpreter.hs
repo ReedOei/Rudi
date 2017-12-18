@@ -6,6 +6,7 @@ module Rudi.Interpreter
     ) where
 
 import Data.Char (isUpper)
+import Data.List (elem)
 import Data.Map (Map)
 import qualified Data.Map as Map
 
@@ -16,7 +17,17 @@ import Rudi.Types
 getDefinition :: String -> Map Expr Expr -> Maybe Expr
 getDefinition name defs = case Map.lookup (Var name) defs of
                             Nothing -> Nothing
-                            Just expr -> Just $ snd $ evalOnce $ doSubstitute defs expr
+                            -- If it doesn't simplify within 200 steps, give up
+                            Just expr -> Just $ simplify defs [] 200 $ doSubstitute defs expr
+
+-- Keeps evaluating the expression until it starts looping, or for n max tries, whichever comes first.
+simplify :: Map Expr Expr -> [Expr] -> Int -> Expr -> Expr
+simplify _ _ 0 expr = expr
+simplify defs history n expr
+    | expr `elem` history = expr
+    | otherwise = case evalOnce $ doSubstitute defs expr of
+                    (False, x) -> x
+                    (True, x) -> simplify defs (x : history) (n - 1) x
 
 contains :: Expr -> String -> Bool
 contains (Var x) str = str == x

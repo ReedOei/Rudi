@@ -110,6 +110,13 @@ From n -> Cons n (From (Next n))
 Naturals -> From Zero
 
 Take n l -> If (IsZero n) Empty (If (IsEmpty l) Empty (Cons (Head l) (Take (Prev n) (Tail l))))
+Drop n l -> If (IsZero n) l (If (IsEmpty l) Empty (Drop (Prev n) (Tail l)))
 
 Sum l -> If (IsEmpty l) Zero (Plus (Head l) (Sum (Tail l)))
+
+Index i l -> Head (Drop i l)
+
+Length l -> If (IsEmpty l) Zero (Next (Length (Tail l)))
+
+Concat a b -> If (IsEmpty a) b (Cons (Head a) (Concat (Tail a) b))
 
