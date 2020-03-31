@@ -127,15 +127,15 @@ substitute :: Expr -> Expr -> Expr -> Expr
 substitute search rep expr@(Var x) =
     case match search expr of
         Nothing -> expr
-        Just reps -> Map.foldWithKey substituteName (Map.foldWithKey (\key _ cur -> prepareSubstitute key cur) rep reps) reps
+        Just reps -> Map.foldrWithKey substituteName (Map.foldrWithKey (\key _ cur -> prepareSubstitute key cur) rep reps) reps
 substitute search rep expr@(Apply x y) =
     case match search expr of
         Nothing -> Apply (substitute search rep x) (substitute search rep y)
-        Just reps -> Map.foldWithKey substituteName (Map.foldWithKey (\key _ cur -> prepareSubstitute key cur) rep reps) reps
+        Just reps -> Map.foldrWithKey substituteName (Map.foldrWithKey (\key _ cur -> prepareSubstitute key cur) rep reps) reps
 substitute _ _ expr = expr
 
 doSubstitute :: Map Expr Expr -> Expr -> Expr
-doSubstitute defs expr = Map.foldWithKey substitute expr defs
+doSubstitute defs expr = Map.foldrWithKey substitute expr defs
 
 -- Evaluates once, returning whether the expression was changed.
 -- This is here because if we compare equality we force computation, which ruins the laziness.
